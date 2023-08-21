@@ -3,7 +3,7 @@ ENV CGO_ENABLED=1
 ENV GOPATH=/go
 ADD . /go/src/goodrain.com/cloud-adaptor/
 WORKDIR /go/src/goodrain.com/cloud-adaptor/
-#ENV GOPROXY=https://goproxy.cn
+ENV GOPROXY=https://goproxy.cn
 RUN go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o cloudadaptor ./cmd/cloud-adaptor
 
 FROM goodrainapps/alpine:3.16
