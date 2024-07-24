@@ -599,7 +599,16 @@ func (e *ClusterHandler) CheckSSHPassword(ctx *gin.Context) {
 	if err != nil {
 		ginutil.JSON(ctx, v1.CheckSSHRes{
 			Status: false,
-			Msg:    "wget 命令未找到",
+			Msg:    "netstat 命令未找到",
+		})
+		return
+	}
+
+	err = execCommand(conn, "netstat")
+	if err != nil {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "netstat 命令未找到",
 		})
 		return
 	}
