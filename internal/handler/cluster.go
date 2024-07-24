@@ -21,6 +21,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	cryptossh "golang.org/x/crypto/ssh"
 	"goodrain.com/cloud-adaptor/internal/adaptor/rke2"
 	"goodrain.com/cloud-adaptor/internal/datastore"
 	"goodrain.com/cloud-adaptor/internal/model"
@@ -541,6 +542,33 @@ func (e *ClusterHandler) CheckSSH(ctx *gin.Context) {
 	ginutil.JSON(ctx, res)
 }
 
+func execCommand(conn *cryptossh.Client, command string) error {
+	session, err := conn.NewSession()
+	if err != nil {
+		logrus.Errorf("Failed to create session: %s", err)
+		return err
+	}
+	defer session.Close()
+	err = session.Run(command)
+	return err
+}
+
+// checkPort checks if a specific port is in use on the remote server
+func checkPort(conn *cryptossh.Client, port int) (bool, error) {
+	command := fmt.Sprintf("netstat -tuln | grep ':%d '", port)
+	session, err := conn.NewSession()
+	if err != nil {
+		return false, fmt.Errorf("failed to create session: %v", err)
+	}
+	defer session.Close()
+
+	output, err := session.CombinedOutput(command)
+	if err != nil && !strings.Contains(string(output), fmt.Sprintf(":%d", port)) {
+		return false, nil // Port is not in use
+	}
+	return true, nil // Port is in use
+}
+
 // CheckSSHPassword 检查账号密码是否正确
 func (e *ClusterHandler) CheckSSHPassword(ctx *gin.Context) {
 	var node model.RKE2Nodes
@@ -549,11 +577,53 @@ func (e *ClusterHandler) CheckSSHPassword(ctx *gin.Context) {
 		ginutil.JSON(ctx, nil, bcode.BadRequest)
 		return
 	}
-	_, err = rke2.InitConn(&node)
-	var res = v1.CheckSSHRes{
-		Status: err == nil,
+	conn, err := rke2.InitConn(&node)
+	if err != nil {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "用户名或者密码错误",
+		})
 	}
-	ginutil.JSON(ctx, res)
+	defer conn.Close()
+
+	err = execCommand(conn, "curl")
+	if err != nil {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "curl 命令未找到",
+		})
+		return
+	}
+
+	err = execCommand(conn, "wget")
+	if err != nil {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "wget 命令未找到",
+		})
+		return
+	}
+
+	use6443, err := checkPort(conn, 6443)
+	if err != nil {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "检查端口命令失败",
+		})
+		return
+	}
+	if use6443 {
+		ginutil.JSON(ctx, v1.CheckSSHRes{
+			Status: false,
+			Msg:    "6443 端口已经被占用",
+		})
+		return
+	}
+
+	ginutil.JSON(ctx, v1.CheckSSHRes{
+		Status: true,
+		Msg:    "通过所有检测",
+	})
 }
 
 // RKE2DeleteCluster 安装rainbond

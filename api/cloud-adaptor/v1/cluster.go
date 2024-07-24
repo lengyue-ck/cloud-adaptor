@@ -75,7 +75,8 @@ type CheckSSHReq struct {
 }
 
 type CheckSSHRes struct {
-	Status bool `json:"status"`
+	Status bool   `json:"status"`
+	Msg    string `json:"msg"`
 }
 
 // CreateRke2ClusterRequest 创建rke2 集群请求体

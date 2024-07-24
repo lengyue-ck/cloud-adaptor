@@ -95,7 +95,7 @@ type RKE2Nodes struct {
 	NodeName   string `gorm:"column:node_name" json:"node_name"`
 	Role       string `gorm:"column:role" json:"role"`
 	Host       string `gorm:"column:host" json:"host"`
-	Port       uint   `gorm:"column:port" json:"port"`
+	Port       int    `gorm:"column:port" json:"port"`
 	User       string `gorm:"column:user" json:"user"`
 	Pass       string `gorm:"column:pass" json:"pass"`
 	ClusterID  string `gorm:"column:cluster_id" json:"cluster_id"`

@@ -22,6 +22,8 @@ import (
 	"math/rand"
 	"net"
 	"net/url"
+	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,7 +34,7 @@ func init() {
 	r = rand.New(rand.NewSource(time.Now().Unix()))
 }
 
-//RandString create rand string
+// RandString create rand string
 func RandString(len int) string {
 	bytes := make([]byte, len)
 	for i := 0; i < len; i++ {
@@ -42,7 +44,7 @@ func RandString(len int) string {
 	return string(bytes)
 }
 
-//GetIPByURL get ip by url
+// GetIPByURL get ip by url
 func GetIPByURL(u string) string {
 	url, _ := url.Parse(u)
 	if url != nil {
@@ -56,4 +58,21 @@ func GetIPByURL(u string) string {
 		}
 	}
 	return ""
+}
+
+// CheckCommandExists checks if a command exists in the system
+func CheckCommandExists(command string) bool {
+	_, err := exec.LookPath(command)
+	return err == nil
+}
+
+// CheckPortInUse checks if a port is in use on 127.0.0.1
+func CheckPortInUse(port int) bool {
+	address := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+	conn, err := net.Listen("tcp", address)
+	if err != nil {
+		return true // Port is in use
+	}
+	conn.Close()
+	return false // Port is not in use
 }
