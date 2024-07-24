@@ -191,10 +191,15 @@ disable:
 tls-san:
   - goodrain.rke2`
 
+	var registriesConfig = `configs:
+  "goodrain.me":
+    tls:
+      insecure_skip_verify: true`
+
 	if cluster == nil {
 		staticConfig += "\nserver: https://goodrain.rke2:9345"
 	}
-	err = session.Run(fmt.Sprintf("mkdir -p /etc/rancher/rke2/config.yaml.d/; echo \"%s\" > /etc/rancher/rke2/config.yaml; cd /etc/rancher/rke2/config.yaml.d; echo \"%s\" > static.yaml", rke2Server.ConfigFile, staticConfig))
+	err = session.Run(fmt.Sprintf("mkdir -p /etc/rancher/rke2/config.yaml.d/; echo \"%s\" > /etc/rancher/rke2/config.yaml; echo \"%s\" > /etc/rancher/rke2/registries.yaml; cd /etc/rancher/rke2/config.yaml.d; echo \"%s\" > static.yaml", rke2Server.ConfigFile, registriesConfig, staticConfig))
 	if err != nil {
 		logrus.Errorf("Failed to execute saveConfig command: %s", err)
 		return err
